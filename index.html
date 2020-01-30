@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+</head>
+
+<body>
+    <script src="https://www.gstatic.com/firebasejs/7.7.0/firebase.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.7.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.7.0/firebase-messaging.js"></script>
+
+    <script>
+
+        $.ajax({
+
+            // get country and city
+
+            url: "https://geolocation-db.com/jsonp",
+            jsonpCallback: "callback",
+            dataType: "jsonp",
+            success: function (location) {
+                console.log(location.country_name);
+                console.log(location.city);
+
+                // get localStorage
+
+
+                if (localStorage.user === undefined) {
+                    local_storage = 'no localStorage data'
+                } else {
+                    local_storage = JSON.parse(window.localStorage.getItem('user'));
+                }
+
+                // get language
+
+
+                var userLang = navigator.language || navigator.userLanguage;
+                console.log("The language is: " + userLang);
+
+                // get firebaseId
+
+
+                var firebaseConfig = {
+                    apiKey: "AIzaSyAizkXkXcunox9JuJjOnRsucgdbgDIE54E",
+                    authDomain: "client-cfa91.firebaseapp.com",
+                    databaseURL: "https://client-cfa91.firebaseio.com",
+                    projectId: "client-cfa91",
+                    storageBucket: "client-cfa91.appspot.com",
+                    messagingSenderId: "496530987182",
+                    appId: "1:496530987182:web:7721bbb94a98381633f53f"
+                };
+                firebase.initializeApp(firebaseConfig);
+
+                const messaging = firebase.messaging();
+
+                messaging.usePublicVapidKey('BAhUAbPVy_gkvXB2lplB19ii0dKxwfUlztbtBnM5OZnEhv5g7yn5AWbisXAaLmQnuHYSOn_4BoDUynFNUo8zvUg')
+
+                messaging.requestPermission().then(function () {
+                    console.log("permission granted")
+                })
+
+                messaging.getToken().then((currentToken) => {
+
+
+                    // post to php file
+
+                    $(document.ready).ready(function () {
+                        $.post(
+                            "./infoToDB.php",
+                            {
+                                country: location.country_name,
+                                city: location.city,
+                                language: userLang,
+                                local_storage: local_storage,
+                                firebaseId: currentToken
+                            },
+                            function (data, status) { }
+                        )
+                    })
+
+                }).catch((err) => {
+                    console.log('An error occurred while retrieving token. ', err);
+                });
+
+                // get pushes when window is open
+
+                messaging.onMessage((payload) => {
+                    var obj = JSON.parse(payload.data.notification);
+                    var notification = new Notification(obj.title, {
+                        icon: obj.icon,
+                        body: obj.body
+                    })
+                });
+
+            }
+        });
+
+    </script>
+
+</body>
+
+</html>
